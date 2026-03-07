@@ -19,10 +19,10 @@
 9. arreglar lo del la lista de well restuls para optimizaciones anterioes en el historal (tab 3) (A)
 10. implementar una tabla en la base de datos para la optimizacion global.
 11. kpi para optimizacion global (punto óptimo máximo). (B)
-12. kpi con diferencia de gas para alcanzar la produccion máxima (constrained) - generalizacion del kpi actual. (C)
+**12. kpi con diferencia de gas para alcanzar la produccion máxima (constrained) - generalizacion del kpi actual. (C)**
 13. (criticidad baja) modelo mrp opcional actibable/desactivable. 
 14. dos casos de estudio: fisico y económico (usar varios pozos de los datos ya disponibles).
-15. convertir proper a clases.
+**15. convertir proper a clases.**
 
 16. it is not necessart to call the database to get the well optimization results
 DisplayConstrainedResults just requires the optimization results (just one parameter)

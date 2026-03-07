@@ -9,14 +9,11 @@ from backend.services.fitting_service import FittingService
 from backend.services.well_optimization_service import WellOptimizationService
 from backend.repositories.field_optimization_repository import FieldOptimizationRepository
 from backend.repositories.well_optimization_repository import WellOptimizationRepository
+from app.utils.state_keys import StateKeys
 
 class OptimizationExecutionComponent:
     def __init__(self, db: SnowflakeDB):
         self.db = db
-        self.SESSION_KEY_GLOBAL = "global_optimization_results"
-        self.SESSION_KEY_CONSTR = "constrained_optimization_results"
-        self.SESSION_KEY_WELL = "well_results"
-
 
     def run_global_optimization(self, loaded_data, global_settings):
         q_gl_list, q_fluid_list, wct_list, list_info = loaded_data
@@ -52,7 +49,7 @@ class OptimizationExecutionComponent:
                     optimization_results = pipeline.run()
                     
                     # Save GLOBAL results in session_state
-                    st.session_state[self.SESSION_KEY_GLOBAL] = optimization_results
+                    st.session_state[StateKeys.SESSION_KEY_GLOBAL] = optimization_results
                     
                     st.info("Total QGL has stabilized. Finalizing global optimization.")
 
@@ -64,8 +61,8 @@ class OptimizationExecutionComponent:
                     st.error(f"❌ Error during global optimization: {str(e)}")
                     st.exception(e)
         
-        if not just_calculated and self.SESSION_KEY_GLOBAL in st.session_state:
-            optimization_results = st.session_state[self.SESSION_KEY_GLOBAL]
+        if not just_calculated and StateKeys.SESSION_KEY_GLOBAL in st.session_state:
+            optimization_results = st.session_state[StateKeys.SESSION_KEY_GLOBAL]
             display_global_results = DisplayGlobalResults(optimization_results)
             display_global_results.show()
 
@@ -80,7 +77,7 @@ class OptimizationExecutionComponent:
             return
 
         just_calculated = False
-        if st.button("Execute Constrained Optimization"):
+        if st.button("Execute Constrained Optimization", type="primary", use_container_width=True):
             with st.spinner("Processing data..."):
                 try:
                     fitting_service = FittingService(q_gl_list, q_fluid_list, wct_list)
@@ -100,16 +97,25 @@ class OptimizationExecutionComponent:
                     optimization_results = pipeline.run()
                     
                     # Save CONSTR results in session_state
-                    st.session_state[self.SESSION_KEY_CONSTR] = optimization_results
+                    st.session_state[StateKeys.SESSION_KEY_CONSTR] = optimization_results
                     
-                    st.success("Constrained optimization completed!")
+                    # Once the constrained optimization is completed:
+                    st.markdown(f"""
+                        <div class="save-banner-ok">
+                            <span style="font-size:24px;">🚀</span>
+                            <div>
+                                <strong>Constrained optimization completed!</strong>
+                                <div class="banner-path">The results are ready for analysis.</div>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
                     well_optimization_repository = WellOptimizationRepository(self.db)
                     well_optimization_service = WellOptimizationService(well_optimization_repository)
                     well_results = well_optimization_service.get_latest_well_optimizations()
                     
                     # Save WELL results in session_state
-                    st.session_state[self.SESSION_KEY_WELL] = well_results
+                    st.session_state[StateKeys.SESSION_KEY_WELL] = well_results
 
                     display_constrained_results = DisplayConstrainedResults(optimization_results, well_results)
                     display_constrained_results.show()
@@ -120,8 +126,8 @@ class OptimizationExecutionComponent:
                     st.exception(e)
 
         # Logic to show saved CONSTR results
-        if not just_calculated and self.SESSION_KEY_CONSTR in st.session_state and self.SESSION_KEY_WELL in st.session_state:
-            optimization_results = st.session_state[self.SESSION_KEY_CONSTR]
-            well_results = st.session_state[self.SESSION_KEY_WELL]
+        if not just_calculated and StateKeys.SESSION_KEY_CONSTR in st.session_state and StateKeys.SESSION_KEY_WELL in st.session_state:
+            optimization_results = st.session_state[StateKeys.SESSION_KEY_CONSTR]
+            well_results = st.session_state[StateKeys.SESSION_KEY_WELL]
             display_constrained_results = DisplayConstrainedResults(optimization_results, well_results)
             display_constrained_results.show()
