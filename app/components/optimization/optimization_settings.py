@@ -13,15 +13,13 @@ class OptimizationSettingsComponent:
         self.qgl_min_constrained = 300
         self.p_qoil_constrained = 70.0
         self.p_qgl_constrained = 300.0
-        self.SESSION_KEY_GLOBAL = "global_optimization_results"
-        self.SESSION_KEY_CONSTR = "constrained_optimization_results"
-        self.SESSION_KEY_WELL = "well_results"
 
-    '''
-    Method to show the global optimization.
-    Now receives the pre-processed data as a tuple: (QGL_lists, Qprod_lists, Metadata_list).
-    '''
+    
     def choose_global_settings(self):
+        '''
+        Method to show the global optimization.
+        Now receives the pre-processed data as a tuple: (QGL_lists, Qprod_lists, Metadata_list).
+        '''
         
         with st.expander("Global Optimization Configuration", expanded=True):
 
@@ -64,12 +62,12 @@ class OptimizationSettingsComponent:
             qgl_min_global=self.qgl_min_global
         )
 
-    '''
-    Method to show the constrained optimization.
-    Now receives the pre-processed data as a tuple: (QGL_lists, Qprod_lists, Metadata_list).
-    '''
-    def choose_constrained_settings(self):
 
+    def choose_constrained_settings(self):
+        '''
+        Method to show the constrained optimization.
+        Now receives the pre-processed data as a tuple: (QGL_lists, Qprod_lists, Metadata_list).
+        '''
         with st.expander("Configuration of Optimization", expanded=True):
 
             # First row with 2 columns
@@ -95,7 +93,7 @@ class OptimizationSettingsComponent:
                     key="qgl_min"
                 )
 
-            # Segunda fila con 2 columnas
+            # Second row with 2 columns
             row2_col1, row2_col2 = st.columns(2)
 
             with row2_col1:

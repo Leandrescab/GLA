@@ -3,14 +3,18 @@ import pandas as pd
 from app.components.utils.plotter import Plotter
 
 class DisplayGlobalResults:
-    def __init__(self, optimization_results: dict):
+    def __init__(self, optimization_results: dict, list_info: list):
         self.plotter = None
         self.optimization_results = optimization_results
+        self.list_info = list_info
 
     def show(self):
-
+        st.divider()
+        st.subheader("Summary Metrics")
         self._show_summary_metrics()
-
+        st.divider()
+        field_name = self.list_info[0] if self.list_info else "Unknown Field"
+        st.subheader(f"Global optimization curve: {field_name}")
         self.plotter = Plotter(self.optimization_results)
         fig = self.plotter.create_global_curve()
         st.plotly_chart(fig, use_container_width=True)

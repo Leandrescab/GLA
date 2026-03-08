@@ -23,7 +23,7 @@ class OptimizationExecutionComponent:
             return
 
         just_calculated = False
-        if st.button("Global Optimization"):
+        if st.button("Execute Global Optimization", type="primary", use_container_width=True):
             with st.spinner("Processing data..."):
                 try:
                     
@@ -32,11 +32,7 @@ class OptimizationExecutionComponent:
 
                     field_optimization_repository = FieldOptimizationRepository(self.db)
                     field_optimization_service = FieldOptimizationService(field_optimization_repository)
-                    plant_name = list_info[0] if list_info else "Unknown Plant"
                     optimization = field_optimization_service.get_latest_field_optimization()
-
-                    st.subheader(f"Global optimization curve: {plant_name}")
-                    st.info("Calculating global optimization curve...")
 
                     pipeline = OptimizationGlobalPipelineService(
                                                                 q_gl_common_range=fit["q_gl_common_range"],
@@ -51,9 +47,9 @@ class OptimizationExecutionComponent:
                     # Save GLOBAL results in session_state
                     st.session_state[StateKeys.SESSION_KEY_GLOBAL] = optimization_results
                     
-                    st.info("Total QGL has stabilized. Finalizing global optimization.")
+                    self.optimization_completed_message(flag="global")
 
-                    display_global_results = DisplayGlobalResults(optimization_results)
+                    display_global_results = DisplayGlobalResults(optimization_results, list_info)
                     display_global_results.show() 
                     just_calculated = True	
 
@@ -63,7 +59,8 @@ class OptimizationExecutionComponent:
         
         if not just_calculated and StateKeys.SESSION_KEY_GLOBAL in st.session_state:
             optimization_results = st.session_state[StateKeys.SESSION_KEY_GLOBAL]
-            display_global_results = DisplayGlobalResults(optimization_results)
+            self.optimization_completed_message(flag="global")
+            display_global_results = DisplayGlobalResults(optimization_results, list_info)
             display_global_results.show()
 
 
@@ -100,15 +97,7 @@ class OptimizationExecutionComponent:
                     st.session_state[StateKeys.SESSION_KEY_CONSTR] = optimization_results
                     
                     # Once the constrained optimization is completed:
-                    st.markdown(f"""
-                        <div class="save-banner-ok">
-                            <span style="font-size:24px;">🚀</span>
-                            <div>
-                                <strong>Constrained optimization completed!</strong>
-                                <div class="banner-path">The results are ready for analysis.</div>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    self.optimization_completed_message(flag="constrained")
 
                     well_optimization_repository = WellOptimizationRepository(self.db)
                     well_optimization_service = WellOptimizationService(well_optimization_repository)
@@ -129,5 +118,29 @@ class OptimizationExecutionComponent:
         if not just_calculated and StateKeys.SESSION_KEY_CONSTR in st.session_state and StateKeys.SESSION_KEY_WELL in st.session_state:
             optimization_results = st.session_state[StateKeys.SESSION_KEY_CONSTR]
             well_results = st.session_state[StateKeys.SESSION_KEY_WELL]
+            self.optimization_completed_message(flag="constrained")
             display_constrained_results = DisplayConstrainedResults(optimization_results, well_results)
             display_constrained_results.show()
+
+
+    def optimization_completed_message(self, flag):
+        if flag == "constrained":
+            st.markdown(f"""
+                <div class="save-banner-ok">
+                    <span style="font-size:24px;">🚀</span>
+                    <div>
+                        <strong>Constrained optimization completed!</strong>
+                    <div class="banner-path">The results are ready for analysis.</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        elif flag == "global":
+            st.markdown(f"""
+                <div class="save-banner-ok">
+                    <span style="font-size:24px;">🚀</span>
+                    <div>
+                        <strong>Global optimization completed!</strong>
+                    <div class="banner-path">Total qgl has stabilized. The results are ready for analysis.</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)

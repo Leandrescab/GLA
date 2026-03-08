@@ -15,17 +15,17 @@ class FileUploadComponent:
         """Show the file upload component."""
         self._init_session_state()
         tmp_dir = self._get_tmp_dir()
-        option = self._choose_data_loading_method()
+        tab1, tab2, _ = self._choose_data_loading_method()
 
-        if option == "Manual input":
+        with tab1:
             manual_input = ManualInputComponent(tmp_dir)
             manual_input.load()
-        elif option == "Upload csv file":
+        with tab2:
             csv_input = CSVInputComponent(tmp_dir)
             csv_input.load()
-        elif option == "Generate from Prosper":
-            proper_input = ProperInputComponent(tmp_dir)
-            proper_input.load()
+        #with tab3:
+            #proper_input = ProperInputComponent(tmp_dir)
+            #proper_input.load()
 
 
 
@@ -52,13 +52,12 @@ class FileUploadComponent:
             return local_path
 
 
-
+    
     def _choose_data_loading_method(self):
         """Choose the data loading method."""
-        option = st.segmented_control(
-            "Choose a data loading method:",
-            options=["Manual input", "Upload csv file", "Generate from Prosper"],
-            selection_mode="single", 
-            default="Manual input"
-        )
-        return option
+        tab1, tab2, tab3 = st.tabs([
+            "Manual input",
+            "Upload csv file",
+            "Generate from Prosper"
+        ])
+        return tab1, tab2, tab3
