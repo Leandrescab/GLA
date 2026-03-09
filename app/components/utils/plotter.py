@@ -5,7 +5,7 @@ from math import ceil
 
 class Plotter:
     def __init__(self, optimization_results: dict):
-        self.bg_color = "#22272e"
+        self.bg_color = "#0e1117"
         self.grid_color = "#37474F"
         self.text_color = "#FFFFFF"
         self.line_color = "#00E676"
