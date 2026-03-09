@@ -190,10 +190,38 @@ def inject_global_css():
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
+    /* Download button: same fancy style as primary buttons */
+    div[data-testid="stDownloadButton"] button {
+        display: block !important;
+        margin: 0 auto !important;
+        width: 100%;
+        background: rgba(56, 139, 253, 0.1) !important;
+        border: 1px solid var(--primary-color) !important;
+        color: var(--primary-color) !important;
+        font-size: 10px;
+        padding: 3px 10px;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.25s ease;
+    }
+    div[data-testid="stDownloadButton"] button:hover {
+        transform: translateY(-4px);
+        background: rgba(56, 139, 253, 0.1) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
 
     /* ─────────────────────────────────────────────
-       METRIC CARDS (vertical layout)
+       METRIC CARDS (vertical layout + two-column wrapper)
     ───────────────────────────────────────────── */
+    .metric-cards-two-cols {
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+    }
+    .metric-cards-two-cols > .metric-cards-vertical {
+        flex: 1;
+    }
     .metric-cards-vertical {
         display: flex;
         flex-direction: column;

@@ -37,7 +37,7 @@ class DisplayGlobalResults:
             <div class="metric-card">
                 <div class="metric-title">Total QGL Used</div>
                 <div class="metric-value">{summary['total_qgl']:.2f} <span class="metric-unit">Mscf</span></div>
-                <div class="status-tag">{used_percentage:.1f}% of the limit</div>
+                <!-- <div class="status-tag">{used_percentage:.1f}% of the limit</div> -->
             </div>
         </div>
         """

@@ -1,11 +1,13 @@
 import streamlit as st
 from pathlib import Path
+from app.styles.custom_styles import inject_global_css
 from app.components.file_upload.file_upload_component import FileUploadComponent
 from app.components.optimization.optimization_settings import OptimizationSettingsComponent
 from app.components.optimization.optimization_history import OptimizationHistoryComponent
 from app.components.optimization.optimization_execution import OptimizationExecutionComponent
 from app.components.optimization.display_constrained_results import DisplayConstrainedResults
 from app.components.optimization.display_global_results import DisplayGlobalResults
+from app.components.optimization.optimization_report_generator import OptimizationReportGenerator
 from backend.entities.database import SnowflakeDB
 from backend.services.data_loader_service import DataLoader
 from app.utils.state_keys import StateKeys
@@ -24,6 +26,7 @@ class OptimizationPage:
         This method is called by the app to show the optimization page.
         It is called once when the user navigates to the optimization page.
         """
+        inject_global_css()
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Data loading")
@@ -44,7 +47,12 @@ class OptimizationPage:
 
     def _show_results_of_optimization(self):
         """Section 'Results of Optimization'. Order always: 1 Constrained, 2 Global. The one run last is expanded by default."""
-        st.subheader("Results of Optimization")
+        head_col, btn_col = st.columns([4, 1])
+        with head_col:
+            st.subheader("Results of Optimization")
+        with btn_col:
+            self._show_export_pdf_button()
+
         last_tab = st.session_state.get(StateKeys.SESSION_KEY_LAST_OPTIMIZATION_TAB, "constrained")
 
         with st.expander("Constrained optimization results", expanded=(last_tab != "global")):
@@ -53,6 +61,38 @@ class OptimizationPage:
         with st.expander("Global optimization results", expanded=(last_tab == "global")):
             self._render_global_results()
 
+    def _show_export_pdf_button(self):
+        """Show 'Export to PDF' button when there is at least one result to export."""
+        has_constrained = (
+            StateKeys.SESSION_KEY_CONSTR in st.session_state
+            and StateKeys.SESSION_KEY_WELL in st.session_state
+        )
+        has_global = StateKeys.SESSION_KEY_GLOBAL in st.session_state
+        if not (has_constrained or has_global):
+            return
+        list_info = ["Unknown Field"]
+        if self.loaded_data is not None:
+            _, _, _, list_info = self.loaded_data
+        try:
+            gen = OptimizationReportGenerator(
+                constrained_optimization_results=st.session_state.get(StateKeys.SESSION_KEY_CONSTR),
+                well_results=st.session_state.get(StateKeys.SESSION_KEY_WELL),
+                global_optimization_results=st.session_state.get(StateKeys.SESSION_KEY_GLOBAL),
+                list_info=list_info,
+            )
+            pdf_bytes = gen.build_pdf()
+            st.download_button(
+                "Generate report in PDF",
+                data=pdf_bytes,
+                file_name="optimization_report.pdf",
+                mime="application/pdf",
+                key="optimization_export_pdf",
+                type="primary",
+                use_container_width=True,
+            )
+        except Exception as e:
+            st.caption(f"PDF export unavailable: {e}")
+
     def _render_constrained_results(self):
         if (StateKeys.SESSION_KEY_CONSTR in st.session_state
                 and StateKeys.SESSION_KEY_WELL in st.session_state):
@@ -60,7 +100,7 @@ class OptimizationPage:
                 st.session_state[StateKeys.SESSION_KEY_CONSTR],
                 st.session_state[StateKeys.SESSION_KEY_WELL],
             )
-            c1, c2 = st.columns([1, 5])
+            c1, c2 = st.columns([1, 2])
             with c1:
                 display.show_summary_metrics()
                 st.markdown("---")

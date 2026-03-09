@@ -47,19 +47,23 @@ class DisplayConstrainedResults:
         used_percentage = (summary['total_qgl'] / summary['qgl_limit']) * 100
 
         html = f"""
-        <div class="metric-cards-vertical">
-            <div class="metric-card">
-                <div class="metric-title">Total Production</div>
-                <div class="metric-value">{summary['total_production']:.2f} <span class="metric-unit">bbl</span></div>
+        <div class="metric-cards-two-cols">
+            <div class="metric-cards-vertical">
+                <div class="metric-card">
+                    <div class="metric-title">Total Production</div>
+                    <div class="metric-value">{summary['total_production']:.2f} <span class="metric-unit">bbl</span></div>
+                </div>
+                <!-- <div class="metric-card">
+                    <div class="metric-title">Total QGL Used</div>
+                    <div class="metric-value">{summary['total_qgl']:.2f} <span class="metric-unit">Mscf</span></div>
+                    <div class="status-tag">{used_percentage:.1f}% of the limit</div>
+                </div> -->
             </div>
-            <div class="metric-card">
-                <div class="metric-title">Total QGL Used</div>
-                <div class="metric-value">{summary['total_qgl']:.2f} <span class="metric-unit">Mscf</span></div>
-                <div class="status-tag">{used_percentage:.1f}% of the limit</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-title">Configured QGL Limit</div>
-                <div class="metric-value">{summary['qgl_limit']:.2f} <span class="metric-unit">Mscf</span></div>
+            <div class="metric-cards-vertical">
+                <div class="metric-card">
+                    <div class="metric-title">Configured QGL Limit</div>
+                    <div class="metric-value">{summary['qgl_limit']:.2f} <span class="metric-unit">Mscf</span></div>
+                </div>
             </div>
         </div>
         """
@@ -85,20 +89,27 @@ class DisplayConstrainedResults:
             return
         try:
             well_data = [{
-                "Well": getattr(result, 'well_name', 'N/A'),
-                "Qgl": getattr(result, 'optimal_gas_injection', 0),
-                "Oil": getattr(result, 'optimal_production', 0)
+                "Well identifier": getattr(result, 'well_name', 'N/A'),
+                "Gas lift rate (mscfd)": getattr(result, 'optimal_gas_injection', 0),
+                "Oil rate (bopd)": getattr(result, 'optimal_production', 0)
             } for result in self.well_results]
 
             df = pd.DataFrame(well_data)
-
-            if "Well" not in df.columns:
-                df = df.rename(columns={"well_name": "Well"})
-
-            st.dataframe(df.set_index("Well").style.format({
-                "Qgl": "{:.0f}",
-                "Oil": "{:.0f}"
-            }))
+            if "Well identifier" not in df.columns:
+                df = df.rename(columns={"well_name": "Well identifier"})
+            # Header row "Optimal values" above all column names (full row span)
+            df.columns = pd.MultiIndex.from_tuples([
+                ("Optimal values", "Well identifier"),
+                ("Optimal values", "Gas lift rate (mscfd)"),
+                ("Optimal values", "Oil rate (bopd)")
+            ])
+            st.dataframe(
+                df.style.format({
+                    ("Optimal values", "Gas lift rate (mscfd)"): "{:.0f}",
+                    ("Optimal values", "Oil rate (bopd)"): "{:.0f}"
+                }),
+                hide_index=True,
+            )
 
         except Exception as e:
             st.error(f"Error displaying results: {str(e)}")
