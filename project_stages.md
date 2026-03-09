@@ -28,6 +28,9 @@ _10. implementar una tabla en la base de datos para la optimizacion global._
 
 
 ideas:
+- Entregar analisis de datos en el reporte dinámico.
+- Usar sistema ATS para la carga de datos.
+
 - (actualización tab2) visualizar las pruebas y trazar las curvas de performance (incluyendo en color la fecha). parametro: rango de fechas y ver los datos de los diferentes pozos.  
 
 - it is not necessart to call the database to get the well optimization results
