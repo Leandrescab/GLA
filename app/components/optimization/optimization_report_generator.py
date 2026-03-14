@@ -1,6 +1,7 @@
 """
 Generate a high-quality PDF report from the same data used by the plotter.
-Uses reportlab for layout, pdfrw to embed vector PDF figures, matplotlib for figures; no LaTeX.
+Uses reportlab for layout, matplotlib for figures, and pypdf to append
+vector-figure pages as an optional appendix; no LaTeX.
 
 Usage:
     gen = OptimizationReportGenerator(
@@ -27,7 +28,6 @@ try:
     from reportlab.lib.units import inch
     from reportlab.platypus import (
         Image as RLImage,
-        Flowable,
         Paragraph,
         SimpleDocTemplate,
         Spacer,
@@ -38,15 +38,12 @@ try:
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
-    Flowable = None
 
 try:
-    from pdfrw import PdfReader
-    from pdfrw.buildxobj import pagexobj
-    from pdfrw.toreportlab import makerl
-    PDFRW_AVAILABLE = True
+    from pypdf import PdfReader, PdfWriter
+    PYPDF_AVAILABLE = True
 except ImportError:
-    PDFRW_AVAILABLE = False
+    PYPDF_AVAILABLE = False
 
 import matplotlib
 matplotlib.use("Agg")
@@ -73,61 +70,12 @@ def _fig_to_image_buffer(fig, dpi: int = 150) -> BytesIO:
     buf.seek(0)
     plt.close(fig)
     return buf
-
-
-class _PdfImageFlowable(Flowable):
-    """Embeds a single-page PDF (e.g. from matplotlib) as vector graphics."""
-
-    def __init__(self, pdf_buffer: BytesIO, width_pt: float, height_pt: float):
-        self.width_pt = width_pt
-        self.height_pt = height_pt
-        self._xobj = None
-        self._bbox = None
-        if PDFRW_AVAILABLE and pdf_buffer is not None:
-            pdf_buffer.seek(0)
-            reader = PdfReader(pdf_buffer)
-            if reader.pages:
-                page = reader.pages[0]
-                self._xobj = pagexobj(page)
-                if hasattr(page, "MediaBox") and page.MediaBox:
-                    self._bbox = [float(x) for x in page.MediaBox]
-                elif hasattr(self._xobj, "BBox") and self._xobj.BBox:
-                    self._bbox = [float(x) for x in self._xobj.BBox]
-                else:
-                    self._bbox = [0, 0, 612, 792]
-
-    def wrap(self, availWidth, availHeight):
-        return self.width_pt, self.height_pt
-
-    def draw(self):
-        if not PDFRW_AVAILABLE or self._xobj is None or self._bbox is None:
-            return
-        canv = self.canv
-        w_src = self._bbox[2] - self._bbox[0]
-        h_src = self._bbox[3] - self._bbox[1]
-        if w_src <= 0 or h_src <= 0:
-            return
-        xscale = self.width_pt / w_src
-        yscale = self.height_pt / h_src
-        canv.saveState()
-        canv.translate(0, 0)
-        canv.scale(xscale, yscale)
-        canv.doForm(makerl(canv, self._xobj))
-        canv.restoreState()
-
-
-def _make_figure_flowable(fig, width_pt: float, height_pt: float):
-    """Vector PDF if pdfrw available, else PNG."""
-    if PDFRW_AVAILABLE and Flowable is not None:
-        pdf_buf = BytesIO()
-        fig.savefig(pdf_buf, format="pdf", bbox_inches="tight", facecolor="white")
-        pdf_buf.seek(0)
-        flowable = _PdfImageFlowable(pdf_buf, width_pt, height_pt)
-        if flowable._xobj is not None:
-            plt.close(fig)
-            return flowable
-    buf = _fig_to_image_buffer(fig)
-    return RLImage(buf, width=width_pt, height=height_pt)
+def _fig_to_pdf_buffer(fig) -> BytesIO:
+    buf = BytesIO()
+    fig.savefig(buf, format="pdf", bbox_inches="tight", facecolor="white")
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 
 
 def _build_global_curve_figure(global_results: dict):
@@ -315,7 +263,38 @@ class OptimizationReportGenerator:
 
         doc.build(story)
         buffer.seek(0)
-        return buffer.getvalue()
+        base_pdf_bytes = buffer.getvalue()
+
+        # Optionally append vector-figure pages as an appendix using pypdf
+        if not PYPDF_AVAILABLE:
+            return base_pdf_bytes
+
+        writer = PdfWriter()
+        main_reader = PdfReader(BytesIO(base_pdf_bytes))
+        for page in main_reader.pages:
+            writer.add_page(page)
+
+        # Append figures as full-page vector PDFs (one page per figure)
+        if has_constrained:
+            fig = _build_well_curves_figure(self.constrained_results, self.well_results)
+            if fig is not None:
+                wells_buf = _fig_to_pdf_buffer(fig)
+                wells_reader = PdfReader(wells_buf)
+                for p in wells_reader.pages:
+                    writer.add_page(p)
+
+        if has_global:
+            fig = _build_global_curve_figure(self.global_results)
+            if fig is not None:
+                global_buf = _fig_to_pdf_buffer(fig)
+                global_reader = PdfReader(global_buf)
+                for p in global_reader.pages:
+                    writer.add_page(p)
+
+        out = BytesIO()
+        writer.write(out)
+        out.seek(0)
+        return out.getvalue()
 
     def _add_constrained_section(self, story, heading_style, subheading_style, body_style, caption_style, styles):
         story.append(Paragraph("1. Constrained Optimization", heading_style))
@@ -394,7 +373,8 @@ class OptimizationReportGenerator:
                 nrows = max(1, (len(self.well_results) + 1) // 2)
                 w_pt = FIG_WIDTH_INCH * inch
                 h_pt = min(2.35 * inch * nrows, 8 * inch)
-                story.append(_make_figure_flowable(fig, w_pt, h_pt))
+                buf = _fig_to_image_buffer(fig, dpi=300)
+                story.append(RLImage(buf, width=w_pt, height=h_pt))
                 story.append(Paragraph(
                     "Figure 1. Predicted fluid and oil rate vs. gas lift rate by well. "
                     "Dashed vertical line: optimal allocation; dotted: MRP point. Adjusted curves and real data where available.",
@@ -448,7 +428,8 @@ class OptimizationReportGenerator:
             if fig is not None:
                 w_pt = FIG_WIDTH_INCH * inch
                 h_pt = 4.75 * inch
-                story.append(_make_figure_flowable(fig, w_pt, h_pt))
+                buf = _fig_to_image_buffer(fig, dpi=300)
+                story.append(RLImage(buf, width=w_pt, height=h_pt))
                 story.append(Paragraph(
                     "Figure 2. Total oil production vs. total gas injection limit (Mscf). "
                     "The horizontal line marks production at the last limit.",

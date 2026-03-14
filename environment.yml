@@ -14,5 +14,5 @@ dependencies:
   - snowflake-snowpark-python
   - streamlit
   - reportlab
-  - pdfrw
+  - pypdf
 
