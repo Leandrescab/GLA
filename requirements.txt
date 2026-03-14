@@ -10,4 +10,4 @@ snowflake-connector-python
 snowflake-snowpark-python
 streamlit
 reportlab
-pdfrw
+pypdf
