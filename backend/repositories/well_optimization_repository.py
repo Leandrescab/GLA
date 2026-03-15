@@ -12,7 +12,7 @@ class WellOptimizationRepository:
         INSERT INTO well_optimizations (
             field_optimization_id, well_number, well_name,
             optimal_production, optimal_gas_injection
-        ) VALUES (%s, %s, %s, %s, %s)
+        ) VALUES (?, ?, ?, ?, ?)
         """
         try:
             params = (
