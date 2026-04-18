@@ -24,6 +24,13 @@
 _15. convertir proper a clases._
 _10. implementar una tabla en la base de datos para la optimizacion global._
 
+16. leer de la base de datos las ultimas pruebas para graficar y compara con la optimización
+17. graficar un rango con un slider de fechas (P). 
+18. agregar las columnas que faltan de valores reales y los totales (paso intermedio - tabla propia de valores reales).
+        - replicar tabla del metodo _show_well_results_table() de la clase display_constrained_results.py}
+        - _show_optimization_well_results_table(), _show_well_test_table().
+
+
 
 
 

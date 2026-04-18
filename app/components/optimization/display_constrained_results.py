@@ -33,7 +33,6 @@ class DisplayConstrainedResults:
         self._plot_well_curves()
 
     def show_detailed_results_by_well(self):
-        #st.markdown("#### Detailed Results by Well")
         self._show_well_results_table()
 
     '''
@@ -114,3 +113,5 @@ class DisplayConstrainedResults:
         except Exception as e:
             st.error(f"Error displaying results: {str(e)}")
             st.write("Data received:", self.well_results)
+
+
