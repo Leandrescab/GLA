@@ -30,6 +30,7 @@ _10. implementar una tabla en la base de datos para la optimizacion global._
         - replicar tabla del metodo _show_well_results_table() de la clase display_constrained_results.py}
         - _show_optimization_well_results_table(), _show_well_test_table().
 
+19. tarea pendiente: generar un script propio para el contenido de results_of_optimization (P)
 
 
 

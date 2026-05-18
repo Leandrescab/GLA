@@ -73,9 +73,24 @@ class ManualInputComponent:
             _panel_open("📍",
             "Define the field name and assign identifiers for each well.",
             f"{self.num_wells} well configured")
+
+
+            df_actual = st.session_state[StateKeys.SESSION_KEY_INFO_DF]
+            column_configuration = {
+                column: st.column_config.SelectboxColumn(
+                    f"Well {i+1}", 
+                    help="Select the well",
+                    width="auto",
+                    options=['A', 'B', 'C'],
+                    required=True,
+                )
+                for i, column in enumerate(df_actual.columns[1:]) 
+            }
+
             st.session_state[StateKeys.SESSION_KEY_INFO_DF] = st.data_editor(
                 st.session_state[StateKeys.SESSION_KEY_INFO_DF],
                 key="editor_fields",
+                column_config=column_configuration,
                 hide_index=True,
                 use_container_width=True,
             )
